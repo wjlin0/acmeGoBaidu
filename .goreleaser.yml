@@ -1,0 +1,29 @@
+before:
+  hooks:
+    # 在构建前运行 go mod tidy 清理模块
+    - go mod tidy
+
+builds:
+  - main: cmd/pathScan/acmeGoBaidu.go
+    binary: acmeGoBaidu
+    env:
+      - CGO_ENABLED=0
+    goos: [windows, linux, darwin]
+    goarch: [amd64, 386, arm, arm64]
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    flags:
+      - -trimpath
+      - -ldflags="-s -w"
+
+archives:
+  - format: zip
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ if eq .Os "darwin" }}macOS{{ else }}{{ .Os }}{{ end }}_{{ .Arch }}'
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
