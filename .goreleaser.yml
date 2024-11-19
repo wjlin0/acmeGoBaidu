@@ -4,7 +4,7 @@ before:
     - go mod tidy
 
 builds:
-  - main: cmd/pathScan/acmeGoBaidu.go
+  - main: cmd/acmeGoBaidu/acmeGoBaidu.go
     binary: acmeGoBaidu
     env:
       - CGO_ENABLED=0
@@ -19,7 +19,6 @@ builds:
         goarch: arm64
     flags:
       - -trimpath
-      - -ldflags="-s -w"
 
 archives:
   - format: zip
