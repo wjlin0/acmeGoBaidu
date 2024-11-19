@@ -85,8 +85,8 @@ metadata:
   name: acme-go-baidu-config
 data:
   config.yaml: |
-    email: "xxx@xx.com" # acme需要的邮箱
-    json_path: "./certs/" # 证书保存的路径
+    acme:
+      email: "xxx@xx.com" # acme需要的邮箱
     domains:
       - domain: "www.wjlin0.com" # 申请的域名
         provider: "cloudflare" # 域名的服务商
