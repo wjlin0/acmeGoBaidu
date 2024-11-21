@@ -25,6 +25,7 @@ type Baidu struct {
 	Origin []api.OriginPeer `yaml:"origin"`
 	Form   string           `yaml:"form"`
 	Dsa    *api.DSAConfig   `yaml:"dsa"`
+	Cname  bool             `yaml:"cname"`
 }
 
 // LoadConfig 读取配置文件

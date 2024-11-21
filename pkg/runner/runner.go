@@ -7,6 +7,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns"
 	"github.com/go-acme/lego/v4/registration"
 	"github.com/projectdiscovery/gologger"
+	baidudns "github.com/wjlin0/acmeGoBaidu/pkg/baidu"
 	"github.com/wjlin0/acmeGoBaidu/pkg/baiduyun"
 	"github.com/wjlin0/acmeGoBaidu/pkg/types"
 	"os"
@@ -24,8 +25,7 @@ type Runner struct {
 	Client       *acme.ACMEClient
 	Certificates map[string]certificate.CertificateInfo
 	JsonFilePath string
-
-	Baidu *baiduyun.BaiduYun
+	Baidu        *baiduyun.BaiduYun
 }
 
 // NewRunner 创建一个新的 Runner 实例
@@ -126,6 +126,7 @@ func (r *Runner) Run() error {
 		}
 
 		gologger.Info().Msgf("成功申请证书: %s", domain)
+
 	}
 	err := r.Output()
 	if err != nil {
@@ -147,6 +148,8 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 	}
 	for _, domainConfig := range r.Config.Domains {
 		domain := domainConfig.Domain
+		provider := domainConfig.Provider
+		cname := domainConfig.Baidu.Cname
 		// 如果没有配置百度云CDN，跳过
 		if domainConfig.Baidu == nil {
 			continue
@@ -230,7 +233,19 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 					}
 				}
 			}
+			var providerDNS baidudns.Provider
 
+			// 配置域名的CNAME解析
+			if cname {
+				if providerDNS, err = baidudns.NewDNSChallengeProviderByName(provider); err != nil {
+					gologger.Error().Msgf("无法创建 DNS 提供商 %s 的挑战: %v", provider, err)
+					continue
+				}
+				if err = providerDNS.CreateCNAMERecord(domain); err != nil {
+					gologger.Error().Msgf("创建CNAME记录失败: %v", err)
+					continue
+				}
+			}
 		}
 	}
 	return nil
