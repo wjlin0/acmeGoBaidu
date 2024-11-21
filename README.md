@@ -20,15 +20,15 @@ go install -v github.com/wjlin0/acmeGoBaidu/cmd/acmeGoBaidu@latest
 ```
 下载准备运行的[二进制文件](https://github.com/wjlin0/acmeGoBaidu/releases/latest)
 
-- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v2.1.4/acmeGoBaidu_2.1.4_macOS_arm64.zip)
+- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.1/acmeGoBaidu_1.0.1_macOS_arm64.zip)
 
-- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v2.1.4/acmeGoBaidu_2.1.4_macOS_amd64.zip)
+- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.1/acmeGoBaidu_1.0.1_macOS_amd64.zip)
 
-- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v2.1.4/acmeGoBaidu_2.1.4_linux_amd64.zip)
+- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.1/acmeGoBaidu_1.0.1_linux_amd64.zip)
 
-- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v2.1.4/acmeGoBaidu_2.1.4_windows_amd64.zip)
+- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.1/acmeGoBaidu_1.0.1_windows_amd64.zip)
 
-- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v2.1.4/acmeGoBaidu_2.1.4_windows_386.zip)
+- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.1/acmeGoBaidu_1.0.1_windows_386.zip)
 
 
 # 用法
@@ -47,6 +47,7 @@ domains:
           host: "www.wjlin0.com" # 回源的域名
         - peer: "http://example.wjlin0.com:80" # 源站地址 http 回源
           host: "www.wjlin0.com" # 回源的域名
+      cname: true # 是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare）
       form: dynamic # 默认为"default"，其他可选value："image"表示图片小文件，"download"表示大文件下载，"media"表示流媒体点播，"dynamic"表示动静态加速
       dsa: # 动态加速规则，enable 为 true 时此项有效。https://cloud.baidu.com/doc/CDN/s/gjwvyex4o#%E8%AF%B7%E6%B1%82%E4%BD%93
         enable: true
@@ -96,6 +97,7 @@ data:
               host: "www.wjlin0.com" # 回源的域名
             - peer: "http://example.wjlin0.com:80" # 源站地址 http 回源
               host: "www.wjlin0.com" # 回源的域名
+          cname: true # 是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare）
           form: dynamic # 默认为"default"，其他可选value："image"表示图片小文件，"download"表示大文件下载，"media"表示流媒体点播，"dynamic"表示动静态加速
           dsa: # 动态加速规则，enable 为 true 时此项有效。https://cloud.baidu.com/doc/CDN/s/gjwvyex4o#%E8%AF%B7%E6%B1%82%E4%BD%93
             enable: true
