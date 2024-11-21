@@ -7,15 +7,15 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns"
 	"github.com/go-acme/lego/v4/registration"
 	"github.com/projectdiscovery/gologger"
+	"github.com/wjlin0/acmeGoBaidu/pkg/acme"
 	baidudns "github.com/wjlin0/acmeGoBaidu/pkg/baidu"
+	"github.com/wjlin0/acmeGoBaidu/pkg/baidu/dns01"
 	"github.com/wjlin0/acmeGoBaidu/pkg/baiduyun"
+	"github.com/wjlin0/acmeGoBaidu/pkg/certificate"
+	"github.com/wjlin0/acmeGoBaidu/pkg/config"
 	"github.com/wjlin0/acmeGoBaidu/pkg/types"
 	"os"
 	"time"
-
-	"github.com/wjlin0/acmeGoBaidu/pkg/acme"
-	"github.com/wjlin0/acmeGoBaidu/pkg/certificate"
-	"github.com/wjlin0/acmeGoBaidu/pkg/config"
 )
 
 // Runner 结构体保存所有证书申请的相关信息
@@ -149,7 +149,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 	for _, domainConfig := range r.Config.Domains {
 		domain := domainConfig.Domain
 		provider := domainConfig.Provider
-		cname := domainConfig.Baidu.Cname
+		cnameInfo := domainConfig.Baidu.CnameInfo
 		// 如果没有配置百度云CDN，跳过
 		if domainConfig.Baidu == nil {
 			continue
@@ -203,7 +203,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 
 			} else {
 				// 证书存在，更新证书
-				gologger.Info().Msgf("证书存在，更新证书: %s", domain)
+
 				parse, _ := time.Parse(time.RFC3339, certMeta.CertStopTime)
 				if parse.Unix() < c.ExpiresAt.Unix() || (parse.Unix() > time.Now().Unix()) == false {
 					gologger.Info().Msgf("证书已过期，更新证书: %s", domain)
@@ -236,14 +236,68 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 			var providerDNS baidudns.Provider
 
 			// 配置域名的CNAME解析
-			if cname {
+			if cnameInfo.Enable {
 				if providerDNS, err = baidudns.NewDNSChallengeProviderByName(provider); err != nil {
 					gologger.Error().Msgf("无法创建 DNS 提供商 %s 的挑战: %v", provider, err)
 					continue
 				}
-				if err = providerDNS.CreateCNAMERecord(domain); err != nil {
-					gologger.Error().Msgf("创建CNAME记录失败: %v", err)
+
+				//dnsType, value, err := dns01.CheckCNAMExistBaidu(dns01.ToFqdn(domain))
+				ok, value, err := providerDNS.ExistsRecord("CNAME", domain)
+				if err != nil {
+					gologger.Error().Msgf("检查CNAME记录失败: %v", err)
 					continue
+				}
+				if !ok {
+					ok, value, err = providerDNS.ExistsRecord("A", domain)
+					if err != nil {
+						gologger.Error().Msgf("检查A记录失败: %v", err)
+						continue
+					}
+					if ok {
+						gologger.Info().Msgf("A记录已存在, 正在删除: %s -> %s", domain, value)
+						// 删除旧A记录
+						if err = providerDNS.DeleteRecord("A", domain); err != nil {
+							gologger.Error().Msgf("删除A记录失败: %v", err)
+							continue
+						}
+					}
+					ok, value, err = providerDNS.ExistsRecord("AAAA", domain)
+					if err != nil {
+						gologger.Error().Msgf("检查AAAA记录失败: %v", err)
+						continue
+					}
+					if ok {
+						gologger.Info().Msgf("AAAA记录已存在, 正在删除: %s -> %s", domain, value)
+						// 删除旧A记录
+						if err = providerDNS.DeleteRecord("AAAA", domain); err != nil {
+							gologger.Error().Msgf("删除AAAA记录失败: %v", err)
+							continue
+						}
+					}
+
+					if err = providerDNS.CreateRecord("CNAME", domain, dns01.ToFqdn(cnameInfo.Value)); err != nil {
+						gologger.Error().Msgf("创建CNAME记录失败: %v", err)
+						continue
+					}
+					gologger.Info().Msgf("成功创建CNAME记录: %s -> %s.a.bdydns.com", domain, domain)
+					continue
+				} else {
+					if dns01.UnFqdn(cnameInfo.Value) == dns01.UnFqdn(cnameInfo.Value) {
+						gologger.Info().Msgf("CNAME记录已存在: %s -> %s", domain, value)
+						continue
+					}
+					gologger.Info().Msgf("CNAME记录已存在, 正在更新: %s -> %s -> %s", domain, value, cnameInfo.Value)
+					// 删除旧CNAME记录
+					if err = providerDNS.DeleteRecord("CNAME", domain); err != nil {
+						gologger.Error().Msgf("删除CNAME记录失败: %v", err)
+						continue
+					}
+					if err = providerDNS.CreateRecord("CNAME", domain, dns01.ToFqdn(cnameInfo.Value)); err != nil {
+						gologger.Error().Msgf("创建CNAME记录失败: %v", err)
+						continue
+					}
+					gologger.Info().Msgf("成功更新CNAME记录: %s -> %s", domain, cnameInfo.Value)
 				}
 			}
 		}

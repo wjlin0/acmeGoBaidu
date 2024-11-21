@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/baidubce/bce-sdk-go/services/cdn/api"
+	"github.com/wjlin0/acmeGoBaidu/pkg/baidu/dns01"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
@@ -22,10 +23,14 @@ type DomainInfo struct {
 }
 
 type Baidu struct {
-	Origin []api.OriginPeer `yaml:"origin"`
-	Form   string           `yaml:"form"`
-	Dsa    *api.DSAConfig   `yaml:"dsa"`
-	Cname  bool             `yaml:"cname"`
+	Origin    []api.OriginPeer `yaml:"origin"`
+	Form      string           `yaml:"form"`
+	Dsa       *api.DSAConfig   `yaml:"dsa"`
+	CnameInfo Cname            `yaml:"cname"`
+}
+type Cname struct {
+	Enable bool   `yaml:"enable"`
+	Value  string `yaml:"value"`
 }
 
 // LoadConfig 读取配置文件
@@ -40,6 +45,19 @@ func LoadConfig(filename string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("解析配置文件失败: %v", err)
 	}
+	// default value
+	for i := range config.Domains {
+		tmp := config.Domains[i]
+		if tmp.Baidu == nil {
+			continue
+		}
+		config.Domains[i].Domain = dns01.UnFqdn(tmp.Domain)
+
+		if tmp.Baidu.CnameInfo.Enable == true {
+			config.Domains[i].Baidu.CnameInfo.Value = fmt.Sprintf("%s.a.bdydns.com.", config.Domains[i].Domain)
+		}
+	}
+
 	return config, nil
 }
 

@@ -1,10 +1,8 @@
 package dns01
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/miekg/dns"
+	"time"
 )
 
 const (
@@ -23,32 +21,37 @@ type ChallengeInfo struct {
 	// FQDN is the full-qualified challenge domain (i.e. `_acme-challenge.[domain].`)
 	FQDN string
 
-	// EffectiveFQDN contains the resulting FQDN after the CNAMEs resolutions.
-	EffectiveFQDN string
-
 	// Value contains the value for the TXT record.
 	Value string
 }
 
-func getChallengeBaiduFQDN(domain string) string {
-	return fmt.Sprintf("%s.", domain)
-}
-
-func GetChallengeBaiduInfo(domain string) ChallengeInfo {
+func GetChallengeInfo(domain string, value string) ChallengeInfo {
 	return ChallengeInfo{
-		Value: fmt.Sprintf("%s.a.bdydns.com.", domain),
-		FQDN:  getChallengeBaiduFQDN(domain),
+		Value: value,
+		FQDN:  ToFqdn(domain),
 	}
 }
 
-func CheckCNAMExistBaidu(domain string) bool {
-	r, err := dnsQuery(domain, dns.TypeCNAME, recursiveNameservers, true)
+func CheckCNAMExistBaidu(fqdn string) (uint16, string, error) {
+	// 首先判断是否存在 CNAME
+	r, err := dnsQuery(fqdn, dns.TypeCNAME, recursiveNameservers, true)
 	if err != nil {
-		return false
+		return 0, "", err
 	}
-	cname := updateDomainWithCName(r, domain)
-	if cname == fmt.Sprintf("%s.a.bdydns.com.", domain) {
-		return false
+	cname := updateDomainWithCName(r, fqdn)
+	if cname != fqdn {
+		return dns.TypeCNAME, cname, nil
 	}
-	return true
+	// 判断是否存在 A 记录
+	r, err = dnsQuery(fqdn, dns.TypeA, recursiveNameservers, true)
+	if err != nil {
+		return 0, "", err
+	}
+
+	ip := updateDomainWithIp(r, fqdn)
+	if ip != "" {
+		return dns.TypeA, ip, nil
+	}
+
+	return 0, "", nil
 }

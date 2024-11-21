@@ -47,7 +47,9 @@ domains:
           host: "www.wjlin0.com" # 回源的域名
         - peer: "http://example.wjlin0.com:80" # 源站地址 http 回源
           host: "www.wjlin0.com" # 回源的域名
-      cname: true # 是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare）
+      cname: 
+        enable: true # enable 为 true 时此项有效。是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare，主动提需求才会写其他服务商的代码）
+        value: "www.wjlin0.com.a.bdydns.com." # 当然也可以不填写，程序自动补充 默认值是 域名.a.bdydns.com.
       form: dynamic # 默认为"default"，其他可选value："image"表示图片小文件，"download"表示大文件下载，"media"表示流媒体点播，"dynamic"表示动静态加速
       dsa: # 动态加速规则，enable 为 true 时此项有效。https://cloud.baidu.com/doc/CDN/s/gjwvyex4o#%E8%AF%B7%E6%B1%82%E4%BD%93
         enable: true
@@ -97,7 +99,9 @@ data:
               host: "www.wjlin0.com" # 回源的域名
             - peer: "http://example.wjlin0.com:80" # 源站地址 http 回源
               host: "www.wjlin0.com" # 回源的域名
-          cname: true # 是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare）
+          cname: 
+            enable: true # enable 为 true 时此项有效。是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare，主动提需求才会写其他服务商的代码）
+            value: "www.wjlin0.com.a.bdydns.com." # 当然也可以不填写，程序自动补充 默认值是 域名.a.bdydns.com.
           form: dynamic # 默认为"default"，其他可选value："image"表示图片小文件，"download"表示大文件下载，"media"表示流媒体点播，"dynamic"表示动静态加速
           dsa: # 动态加速规则，enable 为 true 时此项有效。https://cloud.baidu.com/doc/CDN/s/gjwvyex4o#%E8%AF%B7%E6%B1%82%E4%BD%93
             enable: true
@@ -180,3 +184,7 @@ kubectl create -f pvc.yaml
 kubectl apply -f acmeGoBaidu.yaml
 ```
 
+
+# 注意
+
+**根域名可能无法配置`CNAME` 记录，配置后，不生效**

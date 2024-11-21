@@ -7,7 +7,9 @@ import "time"
 // be solved. CleanUp will be called by the challenge if Present ends
 // in a non-error state.
 type Provider interface {
-	CreateCNAMERecord(domain string) error
+	CreateRecord(Type, domain, value string) error
+	DeleteRecord(Type, domain string) error
+	ExistsRecord(Type, domain string) (bool, string, error)
 }
 
 // ProviderTimeout allows for implementing a

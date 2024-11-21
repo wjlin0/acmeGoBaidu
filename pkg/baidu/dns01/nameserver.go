@@ -238,6 +238,26 @@ func dnsQuery(fqdn string, rtype uint16, nameservers []string, recursive bool) (
 	return r, nil
 }
 
+func dnsQuerys(fqdn string, rtype []uint16, nameservers []string, recursive bool) (*dns.Msg, error) {
+	var r *dns.Msg
+	var err error
+	var errAll error
+
+	for _, t := range rtype {
+		r, err = dnsQuery(fqdn, t, nameservers, recursive)
+		if err == nil && len(r.Answer) > 0 {
+			break
+		}
+		errAll = errors.Join(errAll, err)
+	}
+
+	if err != nil {
+		return r, errAll
+	}
+
+	return r, nil
+}
+
 func createDNSMsg(fqdn string, rtype uint16, recursive bool) *dns.Msg {
 	m := new(dns.Msg)
 	m.SetQuestion(fqdn, rtype)

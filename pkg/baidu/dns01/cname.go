@@ -18,3 +18,14 @@ func updateDomainWithCName(r *dns.Msg, fqdn string) string {
 
 	return fqdn
 }
+func updateDomainWithIp(r *dns.Msg, fqdn string) string {
+	for _, rr := range r.Answer {
+		if cn, ok := rr.(*dns.A); ok {
+			if strings.EqualFold(cn.Hdr.Name, fqdn) {
+				return cn.A.String()
+			}
+		}
+	}
+
+	return ""
+}

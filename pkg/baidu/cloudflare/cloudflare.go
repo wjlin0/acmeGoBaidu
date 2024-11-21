@@ -120,13 +120,11 @@ func (d *DNSProvider) Timeout() (timeout, interval time.Duration) {
 	return d.config.PropagationTimeout, d.config.PollingInterval
 }
 
-func (d *DNSProvider) CreateCNAMERecord(domain string) error {
-	if dns01.CheckCNAMExistBaidu(domain) {
-		return fmt.Errorf("cloudflare: CNAME record already exists for %s", domain)
-	}
+func (d *DNSProvider) CreateRecord(Type, domain, value string) error {
 
-	info := dns01.GetChallengeBaiduInfo(domain)
-	authZone, err := dns01.FindZoneByFqdn(info.EffectiveFQDN)
+	info := dns01.GetChallengeInfo(domain, value)
+
+	authZone, err := dns01.FindZoneByFqdn(dns01.ToFqdn(domain))
 	if err != nil {
 		return fmt.Errorf("cloudflare: could not find zone for domain %q: %w", domain, err)
 	}
@@ -136,8 +134,8 @@ func (d *DNSProvider) CreateCNAMERecord(domain string) error {
 		return fmt.Errorf("cloudflare: failed to find zone %s: %w", authZone, err)
 	}
 	dnsRecord := cloudflare.CreateDNSRecordParams{
-		Type:    "CNAME",
-		Name:    dns01.UnFqdn(info.FQDN),
+		Type:    Type,
+		Name:    dns01.UnFqdn(domain),
 		Content: info.Value,
 		TTL:     d.config.TTL,
 	}
@@ -147,4 +145,61 @@ func (d *DNSProvider) CreateCNAMERecord(domain string) error {
 	}
 	gologger.Info().Msgf("cloudflare: new record for %s, ID %s", domain, response.ID)
 	return nil
+}
+
+func (d *DNSProvider) DeleteRecord(Type string, domain string) error {
+
+	authZone, err := dns01.FindZoneByFqdn(dns01.ToFqdn(domain))
+	if err != nil {
+		return fmt.Errorf("cloudflare: could not find zone for domain %q: %w", domain, err)
+	}
+
+	zoneID, err := d.client.ZoneIDByName(authZone)
+	if err != nil {
+		return fmt.Errorf("cloudflare: failed to find zone %s: %w", authZone, err)
+	}
+	records, _, err := d.client.DNSRecords(context.Background(), zoneID, cloudflare.ListDNSRecordsParams{
+		Type: Type,
+		Name: dns01.UnFqdn(domain),
+	})
+	if err != nil {
+		return err
+	}
+	for _, record := range records {
+		if record.Name == dns01.UnFqdn(domain) {
+			err := d.client.DeleteDNSRecord(context.Background(), zoneID, record.ID)
+			if err != nil {
+				return fmt.Errorf("cloudflare: failed to delete record %s: %w", record.ID, err)
+			}
+			gologger.Info().Msgf("cloudflare: deleted record %s", record.ID)
+		}
+	}
+
+	return nil
+}
+
+func (d *DNSProvider) ExistsRecord(Type string, domain string) (bool, string, error) {
+	authZone, err := dns01.FindZoneByFqdn(dns01.ToFqdn(domain))
+	if err != nil {
+		return false, "", fmt.Errorf("cloudflare: could not find zone for domain %q: %w", domain, err)
+	}
+
+	zoneID, err := d.client.ZoneIDByName(authZone)
+	if err != nil {
+		return false, "", fmt.Errorf("cloudflare: failed to find zone %s: %w", authZone, err)
+	}
+	records, _, err := d.client.DNSRecords(context.Background(), zoneID, cloudflare.ListDNSRecordsParams{
+		Type: Type,
+		Name: dns01.UnFqdn(domain),
+	})
+	if err != nil {
+		return false, "", err
+	}
+	for _, record := range records {
+		if record.Name == dns01.UnFqdn(domain) {
+			return true, record.Content, nil
+		}
+	}
+
+	return false, "", nil
 }
