@@ -69,9 +69,6 @@ acme:
 domains:
   - domain: "www.wjlin0.com" # 申请的域名
     provider: "cloudflare" # 域名的服务商
-    ipv6: true # 是否开启ipv6
-    http2: true # 是否开启http2
-    quic: true # 是否开启quic
     baidu: # 百度配置CDN的配置 
       origin: # 来源
         - peer: "https://example.wjlin0.com:443" # 源站地址 https 回源
@@ -80,6 +77,9 @@ domains:
         - peer: "http://example.wjlin0.com:80" # 源站地址 http 回源
           host: "www.wjlin0.com" # 回源的域名
           isp: "cm" # 回源的运营商
+      ipv6: true # 是否开启ipv6
+      http2: true # 是否开启http2
+      quic: true # 是否开启quic
       cname: 
         enabled: true # enable 为 true 时此项有效。是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare，主动提需求才会写其他服务商的代码）
         value: "www.wjlin0.com.a.bdydns.com." # 当然也可以不填写，程序自动补充 默认值是 域名.a.bdydns.com.
@@ -126,10 +126,10 @@ data:
     domains:
       - domain: "www.wjlin0.com" # 申请的域名
         provider: "cloudflare" # 域名的服务商
-        ipv6: true # 是否开启ipv6
-        http2: true # 是否开启http2
-        quic: true # 是否开启quic
         baidu: # 百度配置CDN的配置 
+          ipv6: true # 是否开启ipv6
+          http2: true # 是否开启http2
+          quic: true # 是否开启quic
           origin: # 来源
             - peer: "https://example.wjlin0.com:443" # 源站地址 https 回源
               host: "www.wjlin0.com" # 回源的域名
