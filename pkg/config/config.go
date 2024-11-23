@@ -26,11 +26,17 @@ type Baidu struct {
 	Origin    []api.OriginPeer `yaml:"origin"`
 	Form      string           `yaml:"form"`
 	Dsa       *api.DSAConfig   `yaml:"dsa"`
-	CnameInfo Cname            `yaml:"cname"`
+	CnameInfo *Cname           `yaml:"cname"`
+	IPv6      bool             `yaml:"ipv6"`
+	// https3
+	QUIC bool `yaml:"quic"`
+	// https2
+	HTTP2 bool           `yaml:"http2"`
+	Seo   *api.SeoSwitch `yaml:"seo"`
 }
 type Cname struct {
-	Enable bool   `yaml:"enable"`
-	Value  string `yaml:"value"`
+	Enabled bool   `yaml:"enabled"`
+	Value   string `yaml:"value"`
 }
 
 // LoadConfig 读取配置文件
@@ -53,7 +59,7 @@ func LoadConfig(filename string) (Config, error) {
 		}
 		config.Domains[i].Domain = dns01.UnFqdn(tmp.Domain)
 
-		if tmp.Baidu.CnameInfo.Enable == true {
+		if tmp.Baidu.CnameInfo.Enabled == true {
 			config.Domains[i].Baidu.CnameInfo.Value = fmt.Sprintf("%s.a.bdydns.com.", config.Domains[i].Domain)
 		}
 	}

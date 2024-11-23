@@ -30,7 +30,7 @@ func ParseOptions() *types.Options {
     $ acmeGoBaidu
 
 运行 acmeGoBaidu 并设置定时任务(e.g. 每天0点):
-    $ acmeGoBaidu -c "0 0 * * *"
+    $ nohup acmeGoBaidu -c "0 0 * * *" &
 运行 acmeGoBaidu 使用环境变量指定配置文件:
     $ CONFIG_PATH=config.yaml JSON_PATH=certificates.json CRON="0 0 * * *" acmeGoBaidu
 `)

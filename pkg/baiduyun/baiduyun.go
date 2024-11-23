@@ -4,9 +4,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"github.com/baidubce/bce-sdk-go/services/cdn"
 	"github.com/baidubce/bce-sdk-go/services/cdn/api"
 	"github.com/baidubce/bce-sdk-go/services/cert"
+	"github.com/projectdiscovery/gologger"
 	"github.com/wjlin0/acmeGoBaidu/pkg/config"
 	"slices"
 	"time"
@@ -17,6 +19,10 @@ type BaiduYun struct {
 	SecretKey  string
 	CertClient *cert.Client
 	cdnClient  *cdn.Client
+}
+type SNI struct {
+	Enabled bool   `json:"enabled,omitempty"`
+	Domain  string `json:"domain,omitempty"`
 }
 
 // GetCertListDetail 证书列表详情
@@ -64,13 +70,12 @@ func (b *BaiduYun) CheckDomainInList(domain string) (bool, error) {
 	}
 	return slices.Contains(domains, domain), nil
 }
+func (b *BaiduYun) SetIPv6(domain string, enable bool) error {
+	return b.cdnClient.SetIPv6(domain, enable)
+}
 
-func (b *BaiduYun) UpdateCdnHTTPSCert(domain string, certId string) error {
-	if err := b.cdnClient.SetDomainHttps(domain, &api.HTTPSConfig{CertId: certId, Enabled: true, Http2Enabled: true}); err != nil {
-		return err
-	}
-
-	return b.cdnClient.SetQUIC(domain, true)
+func (b *BaiduYun) UpdateCdnHTTPSCert(domain string, certId string, http2 bool) error {
+	return b.cdnClient.SetDomainHttps(domain, &api.HTTPSConfig{CertId: certId, Enabled: true, Http2Enabled: http2})
 }
 
 func (b *BaiduYun) IsValidCdn(domain string) (bool, error) {
@@ -101,4 +106,53 @@ func (b *BaiduYun) AddCdn(domain string, baidu *config.Baidu) error {
 		return err
 	}
 	return nil
+}
+
+func (b *BaiduYun) UpdateCdn(domain string, baidu *config.Baidu) error {
+	var err error
+	// 更新ipv6
+	if err = b.cdnClient.SetIPv6(domain, baidu.IPv6); err != nil {
+		return fmt.Errorf("set ipv6 error: %v", err)
+	}
+	// 更新源站
+	if len(baidu.Origin) > 0 {
+		if err = b.cdnClient.SetDomainOrigin(domain, baidu.Origin, domain); err != nil {
+			return fmt.Errorf("set origin error: %v", err)
+		}
+	}
+	// 更新动态加速规则
+	if baidu.Dsa != nil && baidu.Dsa.Enabled {
+		if err = b.cdnClient.SetDsaConfig(domain, baidu.Dsa); err != nil {
+			return fmt.Errorf("set dsa error: %v", err)
+		}
+		gologger.Info().Msgf("成功设置动态加速规则: %s -> %v", domain, *baidu.Dsa)
+	}
+	// 更新Seo
+	if baidu.Seo != nil {
+		if err = b.cdnClient.SetDomainSeo(domain, baidu.Seo); err != nil {
+			return fmt.Errorf("set seo error: %v", err)
+		}
+	}
+	if err = b.SetSNI(domain); err != nil {
+		return fmt.Errorf("set sni error: %v", err)
+	}
+	if err = b.cdnClient.SetQUIC(domain, baidu.QUIC); err != nil {
+		return fmt.Errorf("set quic error: %v", err)
+	}
+	return nil
+
+}
+func (b *BaiduYun) SetSNI(domain string) error {
+	urlPath := "/v2/domain/" + domain + "/config"
+	params := map[string]string{
+		"sni": "",
+	}
+	reqObj := map[string]interface{}{
+		"sni": SNI{
+			Enabled: true,
+			Domain:  domain,
+		},
+	}
+
+	return b.cdnClient.SendCustomRequest("PUT", urlPath, params, nil, reqObj, nil)
 }

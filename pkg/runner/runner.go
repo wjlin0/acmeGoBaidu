@@ -195,7 +195,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 				certId = certResult.CertId
 				gologger.Info().Msgf("成功创建证书: %s", domain)
 				// 更新CDN证书
-				err = r.Baidu.UpdateCdnHTTPSCert(domain, certId)
+				err = r.Baidu.UpdateCdnHTTPSCert(domain, certId, domainConfig.Baidu.HTTP2)
 				if err != nil {
 					gologger.Info().Msgf("更新CDNHTTPS配置失败: %v", err)
 					continue
@@ -213,7 +213,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 						continue
 					}
 					gologger.Info().Msgf("成功更新证书: %s", domain)
-					err = r.Baidu.UpdateCdnHTTPSCert(domain, certResult.CertId)
+					err = r.Baidu.UpdateCdnHTTPSCert(domain, certResult.CertId, domainConfig.Baidu.HTTP2)
 					if err != nil {
 						gologger.Info().Msgf("更新CDNHTTPS配置失败: %v", err)
 						continue
@@ -226,17 +226,20 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 					}
 				} else {
 					gologger.Info().Msgf("证书未过期，跳过更新: %s", domain)
-					err = r.Baidu.UpdateCdnHTTPSCert(domain, certMeta.CertId)
+					err = r.Baidu.UpdateCdnHTTPSCert(domain, certMeta.CertId, domainConfig.Baidu.HTTP2)
 					if err != nil {
 						gologger.Error().Msgf("更新CDN证书失败: %v", err)
 						continue
 					}
 				}
 			}
+			if err = r.Baidu.UpdateCdn(domain, domainConfig.Baidu); err != nil {
+				gologger.Error().Msgf("更新CDN配置失败: %v", err)
+			}
 			var providerDNS baidudns.Provider
 
 			// 配置域名的CNAME解析
-			if cnameInfo.Enable {
+			if cnameInfo != nil && cnameInfo.Enabled {
 				if providerDNS, err = baidudns.NewDNSChallengeProviderByName(provider); err != nil {
 					gologger.Error().Msgf("无法创建 DNS 提供商 %s 的挑战: %v", provider, err)
 					continue
@@ -300,6 +303,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 					gologger.Info().Msgf("成功更新CNAME记录: %s -> %s", domain, cnameInfo.Value)
 				}
 			}
+
 		}
 	}
 	return nil
