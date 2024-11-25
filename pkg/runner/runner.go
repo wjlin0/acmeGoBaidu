@@ -158,7 +158,6 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 			// 首先判断CDN配置是否存在
 			ok, err := r.Baidu.IsValidCdn(domain)
 			if err != nil {
-
 				continue
 			}
 			if ok {

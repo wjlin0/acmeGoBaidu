@@ -28,11 +28,10 @@ type Baidu struct {
 	Dsa       *api.DSAConfig   `yaml:"dsa"`
 	CnameInfo *Cname           `yaml:"cname"`
 	IPv6      bool             `yaml:"ipv6"`
-	// https3
-	QUIC bool `yaml:"quic"`
-	// https2
-	HTTP2 bool           `yaml:"http2"`
-	Seo   *api.SeoSwitch `yaml:"seo"`
+	QUIC      bool             `yaml:"quic"`
+	HTTP2     bool             `yaml:"http2"`
+	HTTP3     bool             `yaml:"http3"`
+	Seo       *api.SeoSwitch   `yaml:"seo"`
 }
 type Cname struct {
 	Enabled bool   `yaml:"enabled"`

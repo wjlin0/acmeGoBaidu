@@ -48,15 +48,15 @@ go install -v github.com/wjlin0/acmeGoBaidu/cmd/acmeGoBaidu@latest
 ```
 下载准备运行的[二进制文件](https://github.com/wjlin0/acmeGoBaidu/releases/latest)
 
-- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.2/acmeGoBaidu_1.0.2_macOS_arm64.zip)
+- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_macOS_arm64.zip)
 
-- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.2/acmeGoBaidu_1.0.2_macOS_amd64.zip)
+- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_macOS_amd64.zip)
 
-- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.2/acmeGoBaidu_1.0.2_linux_amd64.zip)
+- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_linux_amd64.zip)
 
-- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.2/acmeGoBaidu_1.0.2_windows_amd64.zip)
+- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_windows_amd64.zip)
 
-- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.2/acmeGoBaidu_1.0.2_windows_386.zip)
+- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_windows_386.zip)
 
 
 # 用法
@@ -80,6 +80,7 @@ domains:
       ipv6: true # 是否开启ipv6
       http2: true # 是否开启http2
       quic: true # 是否开启quic
+      http3: true # 是否开启http3
       cname: 
         enabled: true # enable 为 true 时此项有效。是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare，主动提需求才会写其他服务商的代码）
         value: "www.wjlin0.com.a.bdydns.com." # 当然也可以不填写，程序自动补充 默认值是 域名.a.bdydns.com.
@@ -130,6 +131,7 @@ data:
           ipv6: true # 是否开启ipv6
           http2: true # 是否开启http2
           quic: true # 是否开启quic
+          http3: true # 是否开启http3
           origin: # 来源
             - peer: "https://example.wjlin0.com:443" # 源站地址 https 回源
               host: "www.wjlin0.com" # 回源的域名

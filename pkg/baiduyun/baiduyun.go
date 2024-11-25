@@ -139,6 +139,10 @@ func (b *BaiduYun) UpdateCdn(domain string, baidu *config.Baidu) error {
 	if err = b.cdnClient.SetQUIC(domain, baidu.QUIC); err != nil {
 		return fmt.Errorf("set quic error: %v", err)
 	}
+	if err = b.SetHttp3(domain, baidu.HTTP3); err != nil {
+		return fmt.Errorf("set http3 error: %v", err)
+	}
+
 	return nil
 
 }
@@ -151,6 +155,20 @@ func (b *BaiduYun) SetSNI(domain string) error {
 		"sni": SNI{
 			Enabled: true,
 			Domain:  domain,
+		},
+	}
+
+	return b.cdnClient.SendCustomRequest("PUT", urlPath, params, nil, reqObj, nil)
+}
+
+func (b *BaiduYun) SetHttp3(domain string, enable bool) error {
+	urlPath := "/v2/domain/" + domain + "/config"
+	params := map[string]string{
+		"http3": "",
+	}
+	reqObj := map[string]interface{}{
+		"http3": map[string]bool{
+			"enable": enable,
 		},
 	}
 
