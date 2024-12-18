@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/wjlin0/acmeGoBaidu/pkg/certificate"
-	"time"
 )
 
 func (ali *AliYun) KodoIsBucketExist(bucketName string, region string) (bool, error) {
@@ -33,39 +32,6 @@ func (ali *AliYun) KodoBandCNAME(region string, bucketName, domain string, c cer
 
 	for _, cname := range result.Cnames {
 		if *cname.Domain == domain {
-			// 判断证书是否过期
-			if cname.Certificate != nil {
-				Date := cname.Certificate.ValidEndDate
-				if *Date != "" {
-					// 解析时间
-					DateTime, err := time.Parse("2006-01-02T15:04:05Z", *Date)
-					if err != nil {
-						return fmt.Errorf("failed to parse time %v", err)
-					}
-					// 判断是否过期
-					if DateTime.After(time.Now()) {
-						return nil
-					}
-					// 创建添加存储空间CNAME的请求
-					requestPut := &oss.PutCnameRequest{
-						Bucket: oss.Ptr(bucketName),
-						BucketCnameConfiguration: &oss.BucketCnameConfiguration{
-							Domain: oss.Ptr(domain),
-							CertificateConfiguration: &oss.CertificateConfiguration{
-								Force:       oss.Ptr(true),
-								Certificate: oss.Ptr(c.Certificate),
-								PrivateKey:  oss.Ptr(c.PrivateKey),
-							},
-						},
-					}
-					// 绑定自定义域名
-					_, err = ali.kodoClient[region].PutCname(context.TODO(), requestPut)
-					if err != nil {
-						return fmt.Errorf("failed to bind cname %v", err)
-					}
-					return nil
-				}
-			}
 			// 创建添加存储空间CNAME的请求
 			requestPut := &oss.PutCnameRequest{
 				Bucket: oss.Ptr(bucketName),

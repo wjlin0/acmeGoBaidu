@@ -113,6 +113,8 @@ export CLOUDFLARE_EMAIL="xxx@xx.com"
 export CLOUDFLARE_API_KEY="xxxxx"
 export BAIDUYUN_ACCESSKEY="xxxxx"
 export BAIDUYUN_SECRETKEY="xxxxx"
+export OSS_ACCESS_KEY_ID="xxxxx"
+export OSS_ACCESS_KEY_SECRET="xxxxx"
 ```
 
 创建完成后执行以下命令
