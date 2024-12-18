@@ -13,7 +13,7 @@ import (
 func ParseOptions() *types.Options {
 	options := &types.Options{}
 	set := goflags.NewFlagSet()
-	set.SetDescription(fmt.Sprintf("acmeGoBaidu %s Go编写的自动申请SSL证书并同步到百度CDN的工具", Version))
+	set.SetDescription(fmt.Sprintf("acmeGoBaidu %s Go编写的自动申请SSL证书并同步到指定目的的工具", Version))
 	set.CreateGroup("Input", "输入",
 		set.StringVar(&options.ConfigFile, "config", "config/config.yaml", "配置文件"),
 		set.StringVarP(&options.JsonPath, "json", "j", "certs/certificates.json", "证书信息存储文件"),

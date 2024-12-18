@@ -11,7 +11,7 @@ const (
 \__,_/\___/_/ /_/ /_/\___/\____/\____/_____/\__,_/_/\__,_/\__,_/
 
 `
-	Version  = `1.0.3`
+	Version  = `1.0.4`
 	userName = "wjlin0"
 	repoName = "acmeGoBaidu"
 )

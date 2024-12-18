@@ -17,12 +17,26 @@ type AcmeInfo struct {
 }
 
 type DomainInfo struct {
-	Domain   string `yaml:"domain"`
-	Provider string `yaml:"provider"`
-	Baidu    *Baidu `yaml:"baidu"`
+	Domain   string    `yaml:"domain"`
+	Provider string    `yaml:"provider"`
+	To       string    `yaml:"to"`
+	Baidu    *BaiduYun `yaml:"baidu,omitempty"`
+	AliYun   *AliYun   `yaml:"ali,omitempty"`
+}
+type AliYun struct {
+	Kodo *Kodo `yaml:"kodo"`
+}
+type Kodo struct {
+	Bucket    string `yaml:"bucket"`
+	Region    string `yaml:"region"`
+	CnameInfo *Cname `yaml:"cname"`
 }
 
-type Baidu struct {
+type BaiduYun struct {
+	CDN *BaiduYunCDN `yaml:"cdn"`
+}
+
+type BaiduYunCDN struct {
 	Origin    []api.OriginPeer `yaml:"origin"`
 	Form      string           `yaml:"form"`
 	Dsa       *api.DSAConfig   `yaml:"dsa"`
@@ -58,8 +72,8 @@ func LoadConfig(filename string) (Config, error) {
 		}
 		config.Domains[i].Domain = dns01.UnFqdn(tmp.Domain)
 
-		if tmp.Baidu.CnameInfo.Enabled == true {
-			config.Domains[i].Baidu.CnameInfo.Value = fmt.Sprintf("%s.a.bdydns.com.", config.Domains[i].Domain)
+		if tmp.Baidu.CDN.CnameInfo.Enabled == true {
+			config.Domains[i].Baidu.CDN.CnameInfo.Value = fmt.Sprintf("%s.a.bdydns.com.", config.Domains[i].Domain)
 		}
 	}
 

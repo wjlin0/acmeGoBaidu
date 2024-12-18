@@ -91,7 +91,7 @@ func (b *BaiduYun) IsValidCdn(domain string) (bool, error) {
 func (b *BaiduYun) GetCdnHttpsConfig(domain string) (*api.HTTPSConfig, error) {
 	return b.cdnClient.GetDomainHttps(domain)
 }
-func (b *BaiduYun) AddCdn(domain string, baidu *config.Baidu) error {
+func (b *BaiduYun) AddCdn(domain string, baidu *config.BaiduYunCDN) error {
 	_, err := b.cdnClient.CreateDomainWithOptions(domain, baidu.Origin,
 		cdn.CreateDomainWithForm(baidu.Form),
 		cdn.CreateDomainWithOriginDefaultHost(domain),
@@ -108,7 +108,7 @@ func (b *BaiduYun) AddCdn(domain string, baidu *config.Baidu) error {
 	return nil
 }
 
-func (b *BaiduYun) UpdateCdn(domain string, baidu *config.Baidu) error {
+func (b *BaiduYun) UpdateCdn(domain string, baidu *config.BaiduYunCDN) error {
 	var err error
 	// 更新ipv6
 	if err = b.cdnClient.SetIPv6(domain, baidu.IPv6); err != nil {

@@ -3,6 +3,7 @@ module github.com/wjlin0/acmeGoBaidu
 go 1.23.0
 
 require (
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.1.3
 	github.com/baidubce/bce-sdk-go v0.9.200
 	github.com/cloudflare/cloudflare-go v0.108.0
 	github.com/go-acme/lego/v4 v4.20.2

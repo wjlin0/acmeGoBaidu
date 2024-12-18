@@ -10,11 +10,13 @@ import (
 	"github.com/wjlin0/acmeGoBaidu/pkg/acme"
 	baidudns "github.com/wjlin0/acmeGoBaidu/pkg/baidu"
 	"github.com/wjlin0/acmeGoBaidu/pkg/baidu/dns01"
-	"github.com/wjlin0/acmeGoBaidu/pkg/baiduyun"
 	"github.com/wjlin0/acmeGoBaidu/pkg/certificate"
 	"github.com/wjlin0/acmeGoBaidu/pkg/config"
 	"github.com/wjlin0/acmeGoBaidu/pkg/types"
+	"github.com/wjlin0/acmeGoBaidu/pkg/yun/aliyun"
+	"github.com/wjlin0/acmeGoBaidu/pkg/yun/baiduyun"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -26,6 +28,7 @@ type Runner struct {
 	Certificates map[string]certificate.CertificateInfo
 	JsonFilePath string
 	Baidu        *baiduyun.BaiduYun
+	AliYun       *aliyun.AliYun
 }
 
 // NewRunner 创建一个新的 Runner 实例
@@ -59,6 +62,10 @@ func NewRunner(opts *types.Options) (*Runner, error) {
 		return nil, fmt.Errorf("创建百度云客户端失败: %v", err)
 	}
 
+	ali, err := aliyun.NewAliYunFromEnv()
+	if err != nil {
+		return nil, fmt.Errorf("创建阿里云客户端失败: %v", err)
+	}
 	return &Runner{
 		Config:       c,
 		Client:       AcmeClient,
@@ -66,6 +73,7 @@ func NewRunner(opts *types.Options) (*Runner, error) {
 		JsonFilePath: opts.JsonPath,
 		Baidu:        baidu,
 		Options:      opts,
+		AliYun:       ali,
 	}, nil
 }
 
@@ -136,6 +144,10 @@ func (r *Runner) Run() error {
 	if err != nil {
 		return err
 	}
+	err = r.UpdateAliYun()
+	if err != nil {
+		return err
+	}
 
 	gologger.Info().Msg("证书申请完成")
 	return nil
@@ -149,11 +161,17 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 	for _, domainConfig := range r.Config.Domains {
 		domain := domainConfig.Domain
 		provider := domainConfig.Provider
-		cnameInfo := domainConfig.Baidu.CnameInfo
 		// 如果没有配置百度云CDN，跳过
+		if strings.HasPrefix(domainConfig.To, "baidu") == false {
+			continue
+		}
 		if domainConfig.Baidu == nil {
 			continue
 		}
+		if domainConfig.Baidu.CDN == nil {
+			continue
+		}
+		cnameInfo := domainConfig.Baidu.CDN.CnameInfo
 		if c, exists := r.Certificates[domain]; exists {
 			// 首先判断CDN配置是否存在
 			ok, err := r.Baidu.IsValidCdn(domain)
@@ -162,7 +180,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 			}
 			if ok {
 				// 添加CDN配置
-				err := r.Baidu.AddCdn(domain, domainConfig.Baidu)
+				err := r.Baidu.AddCdn(domain, domainConfig.Baidu.CDN)
 				if err != nil {
 					gologger.Error().Msgf("添加CDN配置失败: %v", err)
 					continue
@@ -194,7 +212,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 				certId = certResult.CertId
 				gologger.Info().Msgf("成功创建证书: %s", domain)
 				// 更新CDN证书
-				err = r.Baidu.UpdateCdnHTTPSCert(domain, certId, domainConfig.Baidu.HTTP2)
+				err = r.Baidu.UpdateCdnHTTPSCert(domain, certId, domainConfig.Baidu.CDN.HTTP2)
 				if err != nil {
 					gologger.Info().Msgf("更新CDNHTTPS配置失败: %v", err)
 					continue
@@ -212,7 +230,7 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 						continue
 					}
 					gologger.Info().Msgf("成功更新证书: %s", domain)
-					err = r.Baidu.UpdateCdnHTTPSCert(domain, certResult.CertId, domainConfig.Baidu.HTTP2)
+					err = r.Baidu.UpdateCdnHTTPSCert(domain, certResult.CertId, domainConfig.Baidu.CDN.HTTP2)
 					if err != nil {
 						gologger.Info().Msgf("更新CDNHTTPS配置失败: %v", err)
 						continue
@@ -225,14 +243,14 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 					}
 				} else {
 					gologger.Info().Msgf("证书未过期，跳过更新: %s", domain)
-					err = r.Baidu.UpdateCdnHTTPSCert(domain, certMeta.CertId, domainConfig.Baidu.HTTP2)
+					err = r.Baidu.UpdateCdnHTTPSCert(domain, certMeta.CertId, domainConfig.Baidu.CDN.HTTP2)
 					if err != nil {
 						gologger.Error().Msgf("更新CDN证书失败: %v", err)
 						continue
 					}
 				}
 			}
-			if err = r.Baidu.UpdateCdn(domain, domainConfig.Baidu); err != nil {
+			if err = r.Baidu.UpdateCdn(domain, domainConfig.Baidu.CDN); err != nil {
 				gologger.Error().Msgf("更新CDN配置失败: %v", err)
 			}
 			var providerDNS baidudns.Provider
@@ -304,6 +322,166 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 			}
 
 		}
+	}
+	return nil
+}
+
+func (r *Runner) UpdateAliYun() error {
+	for _, domainConfig := range r.Config.Domains {
+		provider := domainConfig.Provider
+		domain := domainConfig.Domain
+		if strings.HasPrefix(domainConfig.To, "ali") == false {
+			continue
+		}
+		// action
+		action := strings.Split(domainConfig.To, ",")
+		if len(action) != 2 {
+			action = []string{"cdn", "kodo"}
+		}
+		if domainConfig.AliYun == nil {
+			continue
+		}
+		if c, exists := r.Certificates[domainConfig.Domain]; exists {
+			switch action[1] {
+			case "kodo":
+
+				// 首先判断存储桶是否存在
+				ok, err := r.AliYun.KodoIsBucketExist(domainConfig.AliYun.Kodo.Bucket, domainConfig.AliYun.Kodo.Region)
+				if err != nil {
+					gologger.Error().Msgf("检查存储桶是否存在失败: %v", err)
+					continue
+				}
+				if !ok {
+					continue
+				}
+				if ok, _ = r.AliYun.KodoIsCnameExist(domainConfig.AliYun.Kodo.Region, domainConfig.AliYun.Kodo.Bucket, domain); !ok {
+					token, err := r.AliYun.KodoCreateCnameToken(domainConfig.AliYun.Kodo.Region, domainConfig.AliYun.Kodo.Bucket, domain)
+					if err != nil {
+						gologger.Error().Msgf("创建CnameToken失败: %v", err)
+						continue
+					}
+
+					err = createTxt(provider, fmt.Sprintf("_dnsauth.%s", domain), *token.Token)
+					if err != nil {
+						return err
+					}
+					defer func() {
+						_ = deleteTxt(provider, fmt.Sprintf("_dnsauth.%s", domain), *token.Token)
+					}()
+
+					time.Sleep(10 * time.Second)
+				}
+
+				err = r.AliYun.KodoBandCNAME(domainConfig.AliYun.Kodo.Region, domainConfig.AliYun.Kodo.Bucket, domainConfig.Domain, c)
+				if err != nil {
+
+					gologger.Error().Msgf("绑定CNAME失败: %v", err)
+					continue
+				}
+
+				gologger.Info().Msgf("成功绑定CNAME: %s", domainConfig.Domain)
+				var providerDNS baidudns.Provider
+				cnameInfo := domainConfig.AliYun.Kodo.CnameInfo
+				// 配置域名的CNAME解析
+				if cnameInfo != nil && cnameInfo.Enabled {
+					if cnameInfo.Value == "" {
+						cnameInfo.Value = fmt.Sprintf("%s.oss-%s.aliyuncs.com.", domainConfig.AliYun.Kodo.Bucket, domainConfig.AliYun.Kodo.Region)
+					}
+
+					if providerDNS, err = baidudns.NewDNSChallengeProviderByName(provider); err != nil {
+						gologger.Error().Msgf("无法创建 DNS 提供商 %s 的挑战: %v", provider, err)
+						continue
+					}
+
+					//dnsType, value, err := dns01.CheckCNAMExistBaidu(dns01.ToFqdn(domain))
+					ok, value, err := providerDNS.ExistsRecord("CNAME", domain)
+					if err != nil {
+						gologger.Error().Msgf("检查CNAME记录失败: %v", err)
+						continue
+					}
+					if !ok {
+						ok, value, err = providerDNS.ExistsRecord("A", domain)
+						if err != nil {
+							gologger.Error().Msgf("检查A记录失败: %v", err)
+							continue
+						}
+						if ok {
+							gologger.Info().Msgf("A记录已存在, 正在删除: %s -> %s", domain, value)
+							// 删除旧A记录
+							if err = providerDNS.DeleteRecord("A", domain); err != nil {
+								gologger.Error().Msgf("删除A记录失败: %v", err)
+								continue
+							}
+						}
+						ok, value, err = providerDNS.ExistsRecord("AAAA", domain)
+						if err != nil {
+							gologger.Error().Msgf("检查AAAA记录失败: %v", err)
+							continue
+						}
+						if ok {
+							gologger.Info().Msgf("AAAA记录已存在, 正在删除: %s -> %s", domain, value)
+							// 删除旧A记录
+							if err = providerDNS.DeleteRecord("AAAA", domain); err != nil {
+								gologger.Error().Msgf("删除AAAA记录失败: %v", err)
+								continue
+							}
+						}
+
+						if err = providerDNS.CreateRecord("CNAME", domain, dns01.ToFqdn(cnameInfo.Value)); err != nil {
+							gologger.Error().Msgf("创建CNAME记录失败: %v", err)
+							continue
+						}
+						gologger.Info().Msgf("成功创建CNAME记录: %s -> %s.a.bdydns.com", domain, domain)
+						continue
+					} else {
+						if dns01.UnFqdn(cnameInfo.Value) == dns01.UnFqdn(cnameInfo.Value) {
+							gologger.Info().Msgf("CNAME记录已存在: %s -> %s", domain, value)
+							continue
+						}
+						gologger.Info().Msgf("CNAME记录已存在, 正在更新: %s -> %s -> %s", domain, value, cnameInfo.Value)
+						// 删除旧CNAME记录
+						if err = providerDNS.DeleteRecord("CNAME", domain); err != nil {
+							gologger.Error().Msgf("删除CNAME记录失败: %v", err)
+							continue
+						}
+						if err = providerDNS.CreateRecord("CNAME", domain, dns01.ToFqdn(cnameInfo.Value)); err != nil {
+							gologger.Error().Msgf("创建CNAME记录失败: %v", err)
+							continue
+						}
+						gologger.Info().Msgf("成功更新CNAME记录: %s -> %s", domain, cnameInfo.Value)
+					}
+				}
+
+			}
+		}
+	}
+
+	return nil
+}
+
+func createTxt(provider string, domain, txt string) error {
+	providerDNS, err := baidudns.NewDNSChallengeProviderByName(provider)
+	if err != nil {
+		return fmt.Errorf("无法创建 DNS 提供商 %s 的挑战: %v", provider, err)
+	}
+
+	//dnsType, value, err := dns01.CheckCNAMExistBaidu(dns01.ToFqdn(domain))
+	err = providerDNS.CreateRecord("TXT", domain, txt)
+	if err != nil {
+		return fmt.Errorf("创建TXT记录失败: %v", err)
+	}
+	return nil
+}
+func deleteTxt(provider string, domain, txt string) error {
+	providerDNS, err := baidudns.NewDNSChallengeProviderByName(provider)
+	if err != nil {
+		return fmt.Errorf("无法创建 DNS 提供商 %s 的挑战: %v", provider, err)
+	}
+
+	//dnsType, value, err := dns01.CheckCNAMExistBaidu(dns01.ToFqdn(domain))
+	err = providerDNS.DeleteRecord("TXT", domain)
+	if err != nil {
+		return fmt.Errorf("删除TXT记录失败: %v", err)
 	}
 	return nil
 }

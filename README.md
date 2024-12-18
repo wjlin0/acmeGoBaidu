@@ -1,4 +1,4 @@
-<h4 align="center">acmeGoBaidu 是一个用Go编写的自动申请SSL证书并同步到百度CDN的工具。</h4>
+<h4 align="center">acmeGoBaidu 是一个用Go编写的自动申请SSL证书并同步到百度CDN、阿里云存储桶的工具。</h4>
 
 <p align="center">
 <img src="https://img.shields.io/github/go-mod/go-version/wjlin0/acmeGoBaidu?filename=go.mod" alt="">
@@ -48,15 +48,15 @@ go install -v github.com/wjlin0/acmeGoBaidu/cmd/acmeGoBaidu@latest
 ```
 下载准备运行的[二进制文件](https://github.com/wjlin0/acmeGoBaidu/releases/latest)
 
-- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_macOS_arm64.zip)
+- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_macOS_arm64.zip)
 
-- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_macOS_amd64.zip)
+- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_macOS_amd64.zip)
 
-- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_linux_amd64.zip)
+- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_linux_amd64.zip)
 
-- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_windows_amd64.zip)
+- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_windows_amd64.zip)
 
-- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.3/acmeGoBaidu_1.0.3_windows_386.zip)
+- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_windows_386.zip)
 
 
 # 用法
@@ -65,31 +65,45 @@ go install -v github.com/wjlin0/acmeGoBaidu/cmd/acmeGoBaidu@latest
 在运行的当前目录下创建一下`config.yaml` 文件
 ```yaml
 acme:
-  email: "xxx@xx.com" # acme需要的邮箱
-domains:
-  - domain: "www.wjlin0.com" # 申请的域名
-    provider: "cloudflare" # 域名的服务商
-    baidu: # 百度配置CDN的配置 
-      origin: # 来源
-        - peer: "https://example.wjlin0.com:443" # 源站地址 https 回源
-          host: "www.wjlin0.com" # 回源的域名
-          isp: "cm" # 回源的运营商
-        - peer: "http://example.wjlin0.com:80" # 源站地址 http 回源
-          host: "www.wjlin0.com" # 回源的域名
-          isp: "cm" # 回源的运营商
-      ipv6: true # 是否开启ipv6
-      http2: true # 是否开启http2
-      quic: true # 是否开启quic
-      http3: true # 是否开启http3
-      cname: 
-        enabled: true # enable 为 true 时此项有效。是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare，主动提需求才会写其他服务商的代码）
-        value: "www.wjlin0.com.a.bdydns.com." # 当然也可以不填写，程序自动补充 默认值是 域名.a.bdydns.com.
-      form: dynamic # 默认为"default"，其他可选value："image"表示图片小文件，"download"表示大文件下载，"media"表示流媒体点播，"dynamic"表示动静态加速
-      dsa: # 动态加速规则，enabled 为 true 时此项有效。https://cloud.baidu.com/doc/CDN/s/gjwvyex4o#%E8%AF%B7%E6%B1%82%E4%BD%93
-        enabled: true
-        rules:
-          - type: "method"
-            value: 'GET;POST;PUT;DELETE;OPTIONS'
+  email: "wjlgeren@163.com"
+  domains:
+    - domain: "cdn.wjlin0.com"
+      provider: "cloudflare"
+      to: 'ali,kodo'
+      ali:
+        kodo:
+          bucket: "wjlin0"
+          region: "cn-chengdu"
+          cname:
+            enabled: true
+            value: "wjlin0.oss-cn-chengdu.aliyuncs.com."
+    - domain: "www.wjlin0.com"
+      provider: "cloudflare"
+      to: 'baidu,cdn'
+      baidu:
+        cdn:
+          origin:
+            - peer: "https://test.wjlin0.com:10443"
+              host: "www.wjlin0.com"
+              isp: "cm"
+            - peer: "http://test.wjlin0.com:1080"
+              host: "www.wjlin0.com"
+              isp: "cm"
+          form: dynamic
+          ipv6: true
+          http2: true
+          quic: true
+          http3: true
+          dsa:
+            enabled: true
+            rules:
+              - type: "method"
+                value: 'GET;POST;PUT;DELETE;OPTIONS'
+              - type: "path"
+                value: "/"
+          cname:
+            enabled: true
+            value: "www.wjlin0.com.a.bdydns.com."
 ```
 配置服务商、百度的认证信息
 例如：`cloudflare`的认证信息
@@ -108,7 +122,7 @@ acmeGoBaidu
 
 ## docker
 ```shell
-docker run -d --name acmeGoBaidu -e CLOUDFLARE_EMAIL="xxx@xx.com" -e CLOUDFLARE_API_KEY="xxxxx" -e BAIDUYUN_ACCESSKEY="xxxx" -e BAIDUYUN_ACCESSKEY="xxxx" -e CRON="0 0 * * 1" -v ./data/config.yaml:/app/config/config.yaml -v ./data/certs:/app/certs wjlin0/acmegobaidu:latest
+docker run -d --name acmeGoBaidu -e CLOUDFLARE_EMAIL="xxx@xx.com" -e CLOUDFLARE_API_KEY="xxxxx" -e BAIDUYUN_ACCESSKEY="xxxx" -e OSS_ACCESS_KEY_ID="xxxx" -e OSS_ACCESS_KEY_SECRET="xxxx" -e BAIDUYUN_ACCESSKEY="xxxx" -e CRON="0 0 * * 1" -v ./data/config.yaml:/app/config/config.yaml -v ./data/certs:/app/certs wjlin0/acmegobaidu:latest
 ```
 
 ## K8s
@@ -123,31 +137,45 @@ metadata:
 data:
   config.yaml: |
     acme:
-      email: "xxx@xx.com" # acme需要的邮箱
-    domains:
-      - domain: "www.wjlin0.com" # 申请的域名
-        provider: "cloudflare" # 域名的服务商
-        baidu: # 百度配置CDN的配置 
-          ipv6: true # 是否开启ipv6
-          http2: true # 是否开启http2
-          quic: true # 是否开启quic
-          http3: true # 是否开启http3
-          origin: # 来源
-            - peer: "https://example.wjlin0.com:443" # 源站地址 https 回源
-              host: "www.wjlin0.com" # 回源的域名
-              isp: "cm" # 回源的运营商
-            - peer: "http://example.wjlin0.com:80" # 源站地址 http 回源
-              host: "www.wjlin0.com" # 回源的域名
-              isp: "cm" # 回源的运营商
-          cname:
-            enabled: true # enable 为 true 时此项有效。是否使用 cname 开启此功能会同步 cname 到 域名服务商 （目前支持 cloudflare，主动提需求才会写其他服务商的代码）
-            value: "www.wjlin0.com.a.bdydns.com." # 当然也可以不填写，程序自动补充 默认值是 域名.a.bdydns.com.
-          form: dynamic # 默认为"default"，其他可选value："image"表示图片小文件，"download"表示大文件下载，"media"表示流媒体点播，"dynamic"表示动静态加速
-          dsa: # 动态加速规则，enabled 为 true 时此项有效。https://cloud.baidu.com/doc/CDN/s/gjwvyex4o#%E8%AF%B7%E6%B1%82%E4%BD%93
-            enabled: true
-            rules:
-              - type: "method"
-                value: 'GET;POST;PUT;DELETE;OPTIONS'
+      email: "wjlgeren@163.com"
+      domains:
+        - domain: "cdn.wjlin0.com"
+          provider: "cloudflare"
+          to: 'ali,kodo'
+          ali:
+            kodo:
+              bucket: "wjlin0"
+              region: "cn-chengdu"
+              cname:
+                enabled: true
+                value: "wjlin0.oss-cn-chengdu.aliyuncs.com."
+        - domain: "www.wjlin0.com"
+          provider: "cloudflare"
+          to: 'baidu,cdn'
+          baidu:
+            cdn:
+              origin:
+                - peer: "https://test.wjlin0.com:10443"
+                  host: "www.wjlin0.com"
+                  isp: "cm"
+                - peer: "http://test.wjlin0.com:1080"
+                  host: "www.wjlin0.com"
+                  isp: "cm"
+              form: dynamic
+              ipv6: true
+              http2: true
+              quic: true
+              http3: true
+              dsa:
+                enabled: true
+                rules:
+                  - type: "method"
+                    value: 'GET;POST;PUT;DELETE;OPTIONS'
+                  - type: "path"
+                    value: "/"
+              cname:
+                enabled: true
+                value: "www.wjlin0.com.a.bdydns.com."
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -184,6 +212,10 @@ spec:
             - name: BAIDUYUN_ACCESSKEY
               value: 'xxxxx'
             - name: BAIDUYUN_SECRETKEY
+              value: 'xxxxx'
+            - name: OSS_ACCESS_KEY_ID
+              value: 'xxxxx'
+            - name: OSS_ACCESS_KEY_SECRET
               value: 'xxxxx'
           command:
             - "acmeGoBaidu"
