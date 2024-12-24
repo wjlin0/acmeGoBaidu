@@ -48,15 +48,15 @@ go install -v github.com/wjlin0/acmeGoBaidu/cmd/acmeGoBaidu@latest
 ```
 下载准备运行的[二进制文件](https://github.com/wjlin0/acmeGoBaidu/releases/latest)
 
-- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_macOS_arm64.zip)
+- [macOS-arm64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.5/acmeGoBaidu_1.0.5_macOS_arm64.zip)
 
-- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_macOS_amd64.zip)
+- [macOS-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.5/acmeGoBaidu_1.0.5_macOS_amd64.zip)
 
-- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_linux_amd64.zip)
+- [linux-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.5/acmeGoBaidu_1.0.5_linux_amd64.zip)
 
-- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_windows_amd64.zip)
+- [windows-amd64](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.5/acmeGoBaidu_1.0.5_windows_amd64.zip)
 
-- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.4/acmeGoBaidu_1.0.4_windows_386.zip)
+- [windows-386](https://github.com/wjlin0/acmeGoBaidu/releases/download/v1.0.5/acmeGoBaidu_1.0.5_windows_386.zip)
 
 
 # 用法
@@ -178,6 +178,9 @@ data:
               cname:
                 enabled: true
                 value: "www.wjlin0.com.a.bdydns.com."
+              originTimeout: # 设置回源延迟时间
+                connectTimeout: 30
+                loadTimeout: 300 # 如果你对ws 有长连接需求需要对这个参数设置较长时间
 ---
 apiVersion: apps/v1
 kind: Deployment

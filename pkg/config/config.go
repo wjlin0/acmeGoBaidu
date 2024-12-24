@@ -37,16 +37,22 @@ type BaiduYun struct {
 }
 
 type BaiduYunCDN struct {
-	Origin    []api.OriginPeer `yaml:"origin"`
-	Form      string           `yaml:"form"`
-	Dsa       *api.DSAConfig   `yaml:"dsa"`
-	CnameInfo *Cname           `yaml:"cname"`
-	IPv6      bool             `yaml:"ipv6"`
-	QUIC      bool             `yaml:"quic"`
-	HTTP2     bool             `yaml:"http2"`
-	HTTP3     bool             `yaml:"http3"`
-	Seo       *api.SeoSwitch   `yaml:"seo"`
+	Origin        []api.OriginPeer `yaml:"origin"`
+	OriginTimeout *OriginTimeout   `yaml:"OriginTimeout"`
+	Form          string           `yaml:"form"`
+	Dsa           *api.DSAConfig   `yaml:"dsa"`
+	CnameInfo     *Cname           `yaml:"cname"`
+	IPv6          bool             `yaml:"ipv6"`
+	QUIC          bool             `yaml:"quic"`
+	HTTP2         bool             `yaml:"http2"`
+	HTTP3         bool             `yaml:"http3"`
+	Seo           *api.SeoSwitch   `yaml:"seo"`
 }
+type OriginTimeout struct {
+	ConnectTimeout int `json:"connectTimeout,omitempty"`
+	LoadTimeout    int `json:"loadTimeout,omitempty"`
+}
+
 type Cname struct {
 	Enabled bool   `yaml:"enabled"`
 	Value   string `yaml:"value"`
@@ -71,10 +77,26 @@ func LoadConfig(filename string) (Config, error) {
 			continue
 		}
 		config.Domains[i].Domain = dns01.UnFqdn(tmp.Domain)
+		if tmp.Baidu != nil {
+			if tmp.Baidu.CDN != nil {
+				if tmp.Baidu.CDN.CnameInfo.Enabled == true {
+					config.Domains[i].Baidu.CDN.CnameInfo.Value = fmt.Sprintf("%s.a.bdydns.com.", config.Domains[i].Domain)
+				}
 
-		if tmp.Baidu.CDN.CnameInfo.Enabled == true {
-			config.Domains[i].Baidu.CDN.CnameInfo.Value = fmt.Sprintf("%s.a.bdydns.com.", config.Domains[i].Domain)
+				if tmp.Baidu.CDN.OriginTimeout != nil {
+					if tmp.Baidu.CDN.OriginTimeout.LoadTimeout <= 0 {
+						tmp.Baidu.CDN.OriginTimeout.LoadTimeout = 5
+					}
+					if tmp.Baidu.CDN.OriginTimeout.ConnectTimeout <= 0 {
+						tmp.Baidu.CDN.OriginTimeout.ConnectTimeout = 5
+					}
+
+				}
+
+			}
+
 		}
+
 	}
 
 	return config, nil

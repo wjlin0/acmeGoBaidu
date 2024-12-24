@@ -174,3 +174,17 @@ func (b *BaiduYun) SetHttp3(domain string, enable bool) error {
 
 	return b.cdnClient.SendCustomRequest("PUT", urlPath, params, nil, reqObj, nil)
 }
+func (b *BaiduYun) SetOriginTimeout(domain string, connectTimeout, loadTimeout int) error {
+	urlPath := "/v2/domain/" + domain + "/config"
+	params := map[string]string{
+		"originTimeout": "",
+	}
+	reqObj := map[string]interface{}{
+		"originTimeout": map[string]int{
+			"connectTimeout": connectTimeout,
+			"loadTimeout":    loadTimeout,
+		},
+	}
+
+	return b.cdnClient.SendCustomRequest("PUT", urlPath, params, nil, reqObj, nil)
+}

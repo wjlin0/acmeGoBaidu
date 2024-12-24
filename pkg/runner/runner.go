@@ -320,7 +320,10 @@ func (r *Runner) UpdateBaiduCdnCertificate() error {
 					gologger.Info().Msgf("成功更新CNAME记录: %s -> %s", domain, cnameInfo.Value)
 				}
 			}
-
+			if err = r.Baidu.SetOriginTimeout(domain, domainConfig.Baidu.CDN.OriginTimeout.ConnectTimeout, domainConfig.Baidu.CDN.OriginTimeout.LoadTimeout); err != nil {
+				gologger.Error().Msgf("回源延迟更新错误 :%s", err)
+				continue
+			}
 		}
 	}
 	return nil
